@@ -29,13 +29,13 @@ class apex:
         self.character_list     = []
 
     def get_random_gun(self):
-            w1 = random.choice(self.guns)
-            self.guns.remove(w1)
-            w2 = random.choice(self.guns)
-            self.guns.remove(w2)
-            return w1,w2
-    def get_players_weapons(self,num_players):
+        w1 = random.choice(self.guns)
+        self.guns.remove(w1)
+        w2 = random.choice(self.guns)
+        self.guns.remove(w2)
+        return w1, w2
 
+    def get_players_weapons(self,num_players):
         if (num_players >= 1):
             w1,w2 = self.get_random_gun()
             self.weapons_list.append(w1)
@@ -65,6 +65,7 @@ class apex:
             self.apex_characters.remove(p3)
             self.character_list.append(p3)
         return self.character_list
+
     def pick_random_drop_site(self,map_name):
         if (map_name == 'kings canyon' or map_name == 'KC' or map_name =='kc'):
             target_list = self.kings_canyon_drop_sites
