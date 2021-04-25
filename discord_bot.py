@@ -3,19 +3,29 @@ import discord
 from dotenv import load_dotenv
 from apex_rng.apex_class import apex as ar
 import emoji
+import requests
+import json
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
+API_TRACKER_KEY = os.getenv('APEX_API_TRACKER_KEY') 
+
 GUILD = 'The Loot Goblins'
 client = discord.Client()
 hal_emote = '<:halMoment:830282349408157756>'
 
-idiot_msg = emoji.emojize('idiot specify arguments :clown: :toilet: -- Hal') + 8*hal_emote
+idiot_msg = emoji.emojize('idiot specify arguments :clown: :toilet: -- Hal') + 8*(' ' + hal_emote)
 lucas_msg = emoji.emojize('Lucas is a wing man user Blugh Blugh Blugh Blugh. :face_vomiting::face_vomiting::poop::poop::poop::poop::poop:')
 meme_msg = 'Your a :regional_indicator_m::regional_indicator_e::regional_indicator_m::regional_indicator_e:'
 nathaniel_msg = 'Boink Boink Nathaniel is tweakin off the doink'
 
+
+
+
 class MyClient(discord.Client):
+    #==============================================================
+    #   Print Weapons in Correct Format
+    #==============================================================
     def print_weapons(self,num_players):
         apex_rng = ar()
         weapons = apex_rng.get_players_weapons(int(num_players))
@@ -32,7 +42,9 @@ class MyClient(discord.Client):
             index+=1
         msg = msg + '\n'
         return msg
-
+    #==============================================================
+    #   Print Drop Site in Correct Format
+    #==============================================================
     def print_drop_site(self,curr_map):
         apex_rng = ar()
         drop_site = apex_rng.pick_random_drop_site(curr_map)
@@ -40,6 +52,9 @@ class MyClient(discord.Client):
         msg = msg + '\n'
         return msg
 
+    #==============================================================
+    #   Print Characters in Correct Format
+    #==============================================================
     def print_characters(self,num_players):
         apex_rng = ar()
         characters = apex_rng.pick_random_character(int(num_players))
@@ -50,16 +65,20 @@ class MyClient(discord.Client):
             index +=1
         msg = msg + '\n'
         return msg
-
+    #==============================================================
+    #   Format strings in correct color
+    #==============================================================
     def color_fy(self,str):
         return '```yaml\n' + str + '```'
 
+    #==============================================================
+    #   Help Menu Function
+    #==============================================================
     def print_help_menu(self):
 
         description = 'Here is the help menu for arguments accepted by this bot. '
         description += 'Each argument is listed under the header for each command. '
         description += '[a|b] is the means argument could be a or b'
-
 
         rng_msg = 'Syntax: ' + self.color_fy('!rng [kc|KC|kings canyon|olympus] [1|2|3]')
         rng_msg += 'Description: Generates random loadouts, drop location, and characters\n'
@@ -96,6 +115,51 @@ class MyClient(discord.Client):
         embed.add_field(name="!nathaniel", value=nathaniel_msg, inline=True)
         return embed
 
+    def get_json_stats(self,name,legend_name):
+        ploads = {'TRN-Api-Key':API_TRACKER_KEY,'Accept':'application/json','Accept-Encoding':'gzip'}
+        url = 'https://public-api.tracker.gg/v2/apex/standard/profile/origin/%s/segments/legend' % (name)
+        r = requests.get(url,ploads)
+        json_dict = json.loads(r.text)
+        list_of_legends = json_dict['data']
+        dict_of_interest = 'Name Not Found'
+        for i in list_of_legends:
+           l_name = i['metadata']['name']
+           if (str(l_name) == legend_name):
+            dict_of_interest = i
+            break
+        return dict_of_interest
+    def process_stats(self,stats,name):
+        title = name + '\'s Stats for ' + stats['metadata']['name']
+        description = 'Players stats have been requested so here they are!'
+
+        embed=discord.Embed(title=title, description=description, color=0xf59542)
+
+        fields = []
+        rank = []
+        percentile = []
+        value = []
+        num_terms = 0
+        for stat in stats['stats']:
+            stat = stats['stats'][stat]
+            fields.append(stat['displayName'])
+            rank.append(stat['rank'])
+            percentile.append(stat['percentile'])
+            value.append(stat['displayValue'])
+            num_terms += 1
+            if (num_terms >= 3):
+                break
+
+        for i in range(0,len(fields)):
+            title = fields[i]
+            msg = '```fix\n' + title + ' = ' + value[i] + '```'
+            msg += '```fix\n Rank' + ' = ' + str(rank[i]) + '```'
+            msg += '```fix\n Percentile' + ' = ' + str(percentile[i]) + '```'
+            embed.add_field(name=title, value=msg, inline=False)
+
+        return embed
+    #===================================================================================
+    #   On Message FUnction
+    #===================================================================================
     async def on_message(self, message):
         # we do not want the bot to reply to itself
         if message.author.id == self.user.id:
@@ -155,10 +219,11 @@ class MyClient(discord.Client):
         # Full Command
         #=================================    
         if message.content.startswith('!rng'):
+            args = message.content.split()
             msg_len = len(message.content)
             if (int(msg_len) > 4):
-                curr_map = message.content[5:-2]
-                num_players = int(message.content[-1])
+                curr_map = args[1]
+                num_players = int(args[2])
                 char_msg = self.print_characters(num_players)
                 wep_msg = self.print_weapons(num_players)
                 ds_msg = self.print_drop_site(curr_map)
@@ -203,14 +268,52 @@ class MyClient(discord.Client):
         if message.content.startswith('!help'):
             embed = self.print_help_menu()
             await message.reply(embed=embed, mention_author=True)
+        #==========
+        # !choppa
+        #==========    
+        if message.content.startswith('!choppa'):
+            name = message.author.name
+            choppa_msg = "Hello There %s" % (name)
+            choppa_msg += "I see you want to get shot by a spitfire. pittttttttttttttttttttt pittttttttttttttttttttt: \nI have poooooted you doooooooooooooooooooooood"
+            await message.reply(choppa_msg, mention_author=True,tts=True)
+        #==========
+        # !shiv
+        #==========    
+        if message.content.startswith('!shiv'):
+            shiv_msg = "UU? RR? UU? RR? UU? RR?"
+            await message.reply(shiv_msg, mention_author=True,tts=True)
+        #==========
+        # !hal
+        #==========    
+        if message.content.startswith('!shiv'):
+            hal_msg = "Shut up snipe we lost and its your fault."
+            await message.reply(hal_msg, mention_author=True,tts=True)
+        #==========
+        # !stats
+        #==========    
+        if message.content.startswith('!stats'):
+            args = message.content.split()
+            name = args[1]
+            l_name = args[2]
+            player_stats_dict = self.get_json_stats(name,l_name)
+            embed = self.process_stats(player_stats_dict,name)
+            await message.reply(embed=embed, mention_author=True)
+
 
     async def on_ready(self):
         await client.change_presence(status=discord.Status.online, activity=discord.Game('Apex Legends'))
-    async def restartBot(ctx):
+
+    async def restartBot(self,ctx):
         await ctx.bot.logout()
-        await ctx.bot.login(TOKEN, bot=True)  
-
-
+        await ctx.bot.login(TOKEN, bot=True) 
 
 client = MyClient()
 client.run(TOKEN)
+
+# GG tracker pswd: LootG0blinz
+
+
+'''GET https://public-api.tracker.gg/v2/apex/standard/profile/origin/ItCubing/segments/legend
+TRN-Api-Key: cb229dfd-7932-45b4-a224-6ed16ab0aa7e
+Accept: application/json
+Accept-Encoding: gzip'''
