@@ -8,9 +8,9 @@ class apex:
     def __init__(self):
         self.apex_characters = [    "Wraith","Path","Blood Hound","Gibby","Lifeline",
                     "Bang","Fart Boi","Mirage","Octane","Watson",
-                    "Crypto","Rev","Loba","Rampart","Horizon","Fuze"]
+                    "Crypto","Rev","Loba","Rampart","Horizon","Fuze","Valkeryie"]
         self.guns       = ['eva','mastif','beak',
-                'triple-take','sentinal','charge','longbow',
+                'bow','sentinal','charge','longbow','pk'
                 'r9','r301','p2020','alternator','G7-scout','re-45',
                 'spittfire','flatline','hemlock','3030 Repeater','wingman',
                 'volt','devo','L-Star','havoc']
@@ -22,6 +22,10 @@ class apex:
         self.olympus_drop_sites = [ 'Docks','Carrier','Estates','Elysium','Hydro-ponics','Power Grid',
                         'Turbine','Rift','Energy Depot','Hammond Labs','Solar Array','Bonzai',
                         'Gardens','Grow Towers','Orbital Canyon',]
+        self.worlds_edge = [ 'Trials','Sky Hook','Lava Fisher','Countdown','Train Yard','Staging',
+                        'Thermal','Tree','Harvester','Sorting','Launch Site','Dome',
+                        'Lava City','Geyser','Overlook','Refinery','Survay','Epi-Center','Frag West','Frag East','Construction']
+
         self.drop_maps          = ['olympus','kings canyon','worlds edge',]
         self.long_line          = "====================================================================="
         self.short_line         = "==============================="
@@ -51,7 +55,6 @@ class apex:
         return self.weapons_list
 
     def pick_random_character(self,num_players):
-
         if (num_players >= 1):
             p1 = random.choice(self.apex_characters)
             self.apex_characters.remove(p1)
@@ -69,6 +72,8 @@ class apex:
     def pick_random_drop_site(self,map_name):
         if (map_name == 'kings canyon' or map_name == 'KC' or map_name =='kc'):
             target_list = self.kings_canyon_drop_sites
+        elif (map_name == 'worlds edge' or map_name == 'we' or map_name == 'WE' or map_name == 'We'):
+            target_list = self.worlds_edge
         elif (map_name == 'olympus'):
             target_list = self.olympus_drop_sites
         drop_site = random.choice(target_list)

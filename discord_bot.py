@@ -5,6 +5,7 @@ from apex_rng.apex_class import apex as ar
 import emoji
 import requests
 import json
+import random
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -97,6 +98,12 @@ class MyClient(discord.Client):
         nathaniel_msg = 'Syntax: ' + self.color_fy('!nathaniel') + 'Sweaty Wraith  ' +  hal_emote
         lucas_msg = 'Syntax: ' + self.color_fy('!lucas') + 'Wingman User ' + 5 * ':face_vomiting:'
 
+        stats_msg = 'Syntax: ' + self.color_fy('!stats [player name] [legend name]')
+        stats_msg+= 'Pulls player Stats from TRN tracker for a specific legend'
+
+        rank_msg = 'Syntax: ' + self.color_fy('!rank [player name]') 
+        rank_msg += 'Lists RP and Rank for a specific player'
+
         embed=discord.Embed(title="Light Ammo Bot Help Menu", description=description, color=0xf59542)
         #embed.set_image(url='https://cdn-images.win.gg/resize/w/610/h/345/format/webp/type/progressive/fit/cover/path/news/f1a94cef23357f68031e958c443c0dfe/4484809be87819c27a1b7e81508f743a/original.jpg')
         embed.set_author(name="Light Ammo")
@@ -105,16 +112,21 @@ class MyClient(discord.Client):
 
         embed.add_field(name="!rng", value=rng_msg, inline=True)
         embed.add_field(name="!map", value=map_msg, inline=False)
-        embed.add_field(name="!players", value=players_msg, inline=True)
 
+        embed.add_field(name="!players", value=players_msg, inline=True)
         embed.add_field(name="!weapons", value=weapons_msg, inline=True)
+
+        embed.add_field(name="!stats", value=stats_msg, inline=False)
+        embed.add_field(name="!rank", value=rank_msg, inline=True)
 
         embed.add_field(name="Server Commands", value=server_msg, inline=False)
         embed.add_field(name="!isaac", value=isaac_msg, inline=True)
         embed.add_field(name="!lucas", value=lucas_msg, inline=True)
         embed.add_field(name="!nathaniel", value=nathaniel_msg, inline=True)
         return embed
-
+    #==============================================================
+    #   pull stats from site
+    #==============================================================
     def get_json_stats(self,name,legend_name):
         ploads = {'TRN-Api-Key':API_TRACKER_KEY,'Accept':'application/json','Accept-Encoding':'gzip'}
         url = 'https://public-api.tracker.gg/v2/apex/standard/profile/origin/%s/segments/legend' % (name)
@@ -128,6 +140,9 @@ class MyClient(discord.Client):
             dict_of_interest = i
             break
         return dict_of_interest
+    #==============================================================
+    #   Process json file for Player Stats
+    #==============================================================
     def process_stats(self,stats,name):
         title = name + '\'s Stats for ' + stats['metadata']['name']
         description = 'Players stats have been requested so here they are!'
@@ -152,11 +167,40 @@ class MyClient(discord.Client):
         for i in range(0,len(fields)):
             title = fields[i]
             msg = '```fix\n' + title + ' = ' + value[i] + '```'
-            msg += '```fix\n Rank' + ' = ' + str(rank[i]) + '```'
-            msg += '```fix\n Percentile' + ' = ' + str(percentile[i]) + '```'
+            msg += '```fix\nRank' + ' = ' + str(rank[i]) + '```'
+            msg += '```fix\nPercentile' + ' = ' + str(percentile[i]) + '```'
             embed.add_field(name=title, value=msg, inline=False)
 
         return embed
+
+    #==============================================================
+    #   Pull Player Overall Stats
+    #==============================================================
+    def pull_player_stats(self,name):
+        ploads = {'TRN-Api-Key':API_TRACKER_KEY,'Accept':'application/json','Accept-Encoding':'gzip'}
+        url = 'https://public-api.tracker.gg/v2/apex/standard/profile/origin/%s' % (name)
+        r = requests.get(url,ploads)
+        json_dict = json.loads(r.text)
+        return json_dict
+
+    def get_rank_rp(self,json_dict,name):
+        rank_dict = json_dict['data']['segments'][0]['stats']['rankScore']
+        rank_val = rank_dict['displayValue']
+        meta_data = rank_dict['metadata']
+
+        rank_tier = meta_data['rankName']
+        image_url = meta_data['iconUrl']
+
+
+        title = name + '\'s RP and Rank'
+        description = 'Rank Stats'
+        description += '```fix\nRank = ' + rank_tier + '```'
+        description += '```fix\nRP = ' + rank_val + '```'
+        embed=discord.Embed(title=title, description=description, color=0xf59542)
+        embed.set_image(url=image_url)
+        return embed   
+
+
     #===================================================================================
     #   On Message FUnction
     #===================================================================================
@@ -298,6 +342,29 @@ class MyClient(discord.Client):
             player_stats_dict = self.get_json_stats(name,l_name)
             embed = self.process_stats(player_stats_dict,name)
             await message.reply(embed=embed, mention_author=True)
+        #==========
+        # !rank
+        #==========    
+        if message.content.startswith('!rank'):
+            args = message.content.split()
+            name = args[1]
+            player_stats_dict = self.pull_player_stats(name)
+            embed = self.get_rank_rp(player_stats_dict,name)
+            await message.reply(embed=embed, mention_author=True)
+        #==========
+        # !fight
+        #==========    
+        if message.content.startswith('!fight'):
+            args = message.content.split()
+            user_name = args[1]
+            status = random.choice(['won','lost'])
+            if status == 'won':
+                verb = random.choice(['clobbered','destroyed','one-clipped','2-pumped','beak\'d','pk\'d','obliterated'])
+            else:
+                verb = random.choice(['finnessed by','rolled and smoked by','pooped on by','used as a mop for the floor by','destroyed. They should reconsider their career'])
+                verb = 'got ' + verb
+            msg = "%s %s %s!!!" % (message.author, verb,user_name)
+            await message.reply(msg, mention_author=True)
 
 
     async def on_ready(self):
